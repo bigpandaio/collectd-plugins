@@ -45,7 +45,7 @@ The 'Realm' value is annoyingly dependant on the version of RabbitMQ you're runn
 =head1 AUTHOR
 
 Mark Steele, C<< <mark at control-alt-del.org> >>
-    
+
 =cut
 
 my $username = 'user';
@@ -58,7 +58,7 @@ plugin_register (TYPE_READ, 'RabbitMQ', 'my_read');
 plugin_register (TYPE_CONFIG, "RabbitMQ", "rabbit_config");
 
 sub rabbit_config {
-  plugin_log(LOG_ERR, "RabbitMQ: reading configuration");
+  plugin_log(LOG_INFO, "RabbitMQ: reading configuration");
     my ($ci) = @_;
     foreach my $item (@{$ci->{'children'}}) {
         my $key = lc($item->{'key'});
@@ -75,13 +75,13 @@ sub rabbit_config {
             $realm = $val;
         }
     }
-  plugin_log(LOG_ERR, "RabbitMQ: reading configuration done");
+  plugin_log(LOG_INFO, "RabbitMQ: reading configuration done");
     return 1;
 }
 
 sub my_read
 {
-  plugin_log(LOG_ERR, "RabbitMQ: starting http request");
+  plugin_log(LOG_DEBUG, "RabbitMQ: starting http request");
   eval {
     my $ua = LWP::UserAgent->new;
     $ua->timeout(5);
@@ -94,12 +94,12 @@ sub my_read
     return 1;
   }
 
-  plugin_log(LOG_ERR, "RabbitMQ: finished http request");
+  plugin_log(LOG_DEBUG, "RabbitMQ: finished http request");
   if ($res->code ne '200') {
     plugin_log(LOG_ERR, "RabbitMQ: non-200 response");
     return 1;
   }
-  plugin_log(LOG_ERR, "RabbitMQ: got 200 response");
+  plugin_log(LOG_DEBUG, "RabbitMQ: got 200 response");
 
   my $contents = $res->content();
   my $ref;
@@ -110,7 +110,7 @@ sub my_read
     plugin_log(LOG_ERR, "RabbitMQ: exception decoding response");
     return 1;
   }
-  plugin_log(LOG_ERR, "RabbitMQ: decoded response");
+  plugin_log(LOG_DEBUG, "RabbitMQ: decoded response");
 
   my $vl = {};
   $vl->{'plugin'} = 'rabbitmq';
@@ -121,25 +121,25 @@ sub my_read
     $vl->{'type_instance'} = $result->{'name'};
     $vl->{'plugin_instance'} =~ s#[/-]#_#g;
     $vl->{'type_instance'} =~ s#[/-]#_#g;
-    $vl->{'values'} = [ 
-      $result->{'messages'} ? $result->{'messages'} : 0, 
+    $vl->{'values'} = [
+      $result->{'messages'} ? $result->{'messages'} : 0,
       $result->{'messages_details'}->{'rate'} ? $result->{'messages_details'}->{'rate'} : 0,
-      $result->{'messages_unacknowledged'} ? $result->{'messages_unacknowledged'} : 0, 
+      $result->{'messages_unacknowledged'} ? $result->{'messages_unacknowledged'} : 0,
       $result->{'messages_unacknowledged_details'}->{'rate'} ? $result->{'messages_unacknowledged_details'}->{'rate'} : 0,
-      $result->{'messages_ready'} ? $result->{'messages_ready'} : 0, 
+      $result->{'messages_ready'} ? $result->{'messages_ready'} : 0,
       $result->{'message_ready_details'}->{'rate'} ? $result->{'message_ready_details'}->{'rate'} : 0,
-      $result->{'memory'} ? $result->{'memory'} : 0, 
-      $result->{'consumers'} ? $result->{'consumers'} : 0, 
+      $result->{'memory'} ? $result->{'memory'} : 0,
+      $result->{'consumers'} ? $result->{'consumers'} : 0,
       $result->{'message_stats'}->{'publish'} ? $result->{'message_stats'}->{'publish'} : 0,
       $result->{'message_stats'}->{'publish_details'}->{'rate'} ? $result->{'message_stats'}->{'publish_details'}->{'rate'} : 0,
       $result->{'message_stats'}->{'deliver_no_ack'} ? $result->{'message_stats'}->{'deliver_no_ack'} : 0,
       $result->{'message_stats'}->{'deliver_no_ack_details'}->{'rate'} ? $result->{'message_stats'}->{'deliver_no_ack_details'}->{'rate'} : 0,
       $result->{'message_stats'}->{'deliver_get'} ? $result->{'message_stats'}->{'deliver_get'} : 0,
       $result->{'message_stats'}->{'deliver_get_details'}->{'rate'} ? $result->{'message_stats'}->{'deliver_get_details'}->{'rate'} : 0,
-    ];  
-    plugin_log(LOG_ERR, "RabbitMQ: dispatching stats for " . $result->{'vhost'} . '/' . $result->{'name'});
+    ];
+    plugin_log(LOG_DEBUG, "RabbitMQ: dispatching stats for " . $result->{'vhost'} . '/' . $result->{'name'});
     plugin_dispatch_values($vl);
   }
-  plugin_log(LOG_ERR, "RabbitMQ: done processing results");
+  plugin_log(LOG_DEBUG, "RabbitMQ: done processing results");
   return 1;
 }
