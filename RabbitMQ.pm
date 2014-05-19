@@ -133,9 +133,7 @@ sub my_read
       $result->{'message_stats'}->{'publish'} ? $result->{'message_stats'}->{'publish'} : 0,
       $result->{'message_stats'}->{'publish_details'}->{'rate'} ? $result->{'message_stats'}->{'publish_details'}->{'rate'} : 0,
       $result->{'message_stats'}->{'deliver_no_ack'} ? $result->{'message_stats'}->{'deliver_no_ack'} : 0,
-      $result->{'message_stats'}->{'deliver_no_ack_details'}->{'rate'} ? $result->{'message_stats'}->{'deliver_no_ack_details'}->{'rate'} : 0,
       $result->{'message_stats'}->{'deliver_get'} ? $result->{'message_stats'}->{'deliver_get'} : 0,
-      $result->{'message_stats'}->{'deliver_get_details'}->{'rate'} ? $result->{'message_stats'}->{'deliver_get_details'}->{'rate'} : 0,
     ];
     plugin_log(LOG_DEBUG, "RabbitMQ: dispatching stats for " . $result->{'vhost'} . '/' . $result->{'name'});
     plugin_dispatch_values($vl);
