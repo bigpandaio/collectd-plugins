@@ -96,7 +96,7 @@ sub my_read
 
   plugin_log(LOG_DEBUG, "RabbitMQ: finished http request");
   if ($res->code ne '200') {
-    plugin_log(LOG_ERR, "RabbitMQ: non-200 response");
+    plugin_log(LOG_ERR, "RabbitMQ: non-200 response: " . ($res->code) . " " . $res->message);
     return 1;
   }
   plugin_log(LOG_DEBUG, "RabbitMQ: got 200 response");
@@ -114,29 +114,48 @@ sub my_read
 
   my $vl = {};
   $vl->{'plugin'} = 'rabbitmq';
-  $vl->{'type'} = 'rabbitmq';
 
   foreach my $result (@{$ref}) {
+    %types = (
+	'rabbitmq_messages' => [ 
+		$result->{'messages'} ? $result->{'messages'} : 0,
+		$result->{'messages_details'}->{'rate'} ? $result->{'messages_details'}->{'rate'} : 0
+	],
+	'rabbitmq_messages_unacknowledged' => [
+		$result->{'messages_unacknowledged'} ? $result->{'messages_unacknowledged'} : 0,
+		$result->{'messages_unacknowledged_details'}->{'rate'} ? $result->{'messages_unacknowledged_details'}->{'rate'} : 0
+	],
+	'rabbitmq_messages_ready' => [
+		$result->{'messages_ready'} ? $result->{'messages_ready'} : 0,
+		$result->{'message_ready_details'}->{'rate'} ? $result->{'message_ready_details'}->{'rate'} : 0
+	],
+	'rabbitmq_memory' => [
+	        $result->{'memory'} ? $result->{'memory'} : 0
+        ],
+	'rabbitmq_consumers' => [
+		$result->{'consumers'} ? $result->{'consumers'} : 0
+	],
+	'rabbitmq_publish' => [
+		$result->{'message_stats'}->{'publish'} ? $result->{'message_stats'}->{'publish'} : 0,
+		$result->{'message_stats'}->{'publish_details'}->{'rate'} ? $result->{'message_stats'}->{'publish_details'}->{'rate'} : 0
+	],
+	'rabbitmq_deliver_no_ack' => [
+		$result->{'message_stats'}->{'deliver_no_ack'} ? $result->{'message_stats'}->{'deliver_no_ack'} : 0
+	],
+	'rabbitmq_deliver_get' => [
+		$result->{'message_stats'}->{'deliver_get'} ? $result->{'message_stats'}->{'deliver_get'} : 0
+	]
+    );
     $vl->{'plugin_instance'} = $result->{'vhost'};
     $vl->{'type_instance'} = $result->{'name'};
     $vl->{'plugin_instance'} =~ s#[/-]#_#g;
-    $vl->{'type_instance'} =~ s#[/-]#_#g;
-    $vl->{'values'} = [
-      $result->{'messages'} ? $result->{'messages'} : 0,
-      $result->{'messages_details'}->{'rate'} ? $result->{'messages_details'}->{'rate'} : 0,
-      $result->{'messages_unacknowledged'} ? $result->{'messages_unacknowledged'} : 0,
-      $result->{'messages_unacknowledged_details'}->{'rate'} ? $result->{'messages_unacknowledged_details'}->{'rate'} : 0,
-      $result->{'messages_ready'} ? $result->{'messages_ready'} : 0,
-      $result->{'message_ready_details'}->{'rate'} ? $result->{'message_ready_details'}->{'rate'} : 0,
-      $result->{'memory'} ? $result->{'memory'} : 0,
-      $result->{'consumers'} ? $result->{'consumers'} : 0,
-      $result->{'message_stats'}->{'publish'} ? $result->{'message_stats'}->{'publish'} : 0,
-      $result->{'message_stats'}->{'publish_details'}->{'rate'} ? $result->{'message_stats'}->{'publish_details'}->{'rate'} : 0,
-      $result->{'message_stats'}->{'deliver_no_ack'} ? $result->{'message_stats'}->{'deliver_no_ack'} : 0,
-      $result->{'message_stats'}->{'deliver_get'} ? $result->{'message_stats'}->{'deliver_get'} : 0,
-    ];
-    plugin_log(LOG_DEBUG, "RabbitMQ: dispatching stats for " . $result->{'vhost'} . '/' . $result->{'name'});
-    plugin_dispatch_values($vl);
+    foreach my $type (keys %types) {
+	  $vl->{'type'} = $type;
+	  $vl->{'type_instance'} =~ s#[/-]#_#g;
+	  $vl->{'values'} = $types{$type};
+	  plugin_log(LOG_DEBUG, "RabbitMQ: dispatching stats for " . $result->{'vhost'} . '/' . $result->{'name'});
+	  plugin_dispatch_values($vl);
+    }
   }
   plugin_log(LOG_DEBUG, "RabbitMQ: done processing results");
   return 1;
